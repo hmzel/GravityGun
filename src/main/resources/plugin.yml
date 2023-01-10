@@ -1,0 +1,5 @@
+name: GravityGun
+version: '${project.version}'
+main: me.zelha.gravitygun.Main
+authors: [ zelha ]
+description: fun lil plugin that lets you grab and throw things like a gravity gun
