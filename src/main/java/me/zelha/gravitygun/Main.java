@@ -3,6 +3,7 @@ package me.zelha.gravitygun;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -26,6 +27,7 @@ public final class Main extends JavaPlugin implements Listener {
 
     private final Map<UUID, Integer> runnableMap = new HashMap<>();
     private final Map<UUID, Double> distanceMap = new HashMap<>();
+    private final Map<UUID, UUID> targetMap = new HashMap<>();
 
     @Override
     public void onEnable() {
@@ -45,11 +47,28 @@ public final class Main extends JavaPlugin implements Listener {
 
         e.setCancelled(true);
 
+        if ((e.getAction() == Action.LEFT_CLICK_AIR || e.getAction() == Action.LEFT_CLICK_BLOCK) && targetMap.containsKey(uuid)) {
+            Entity entity = getEntity(targetMap.get(uuid));
+            Location entityLoc = entity.getLocation();
+
+            if (entity instanceof LivingEntity) {
+                entityLoc = ((LivingEntity) entity).getEyeLocation();
+            }
+
+            Bukkit.getScheduler().cancelTask(runnableMap.get(uuid));
+            runnableMap.remove(uuid);
+            distanceMap.remove(uuid);
+            targetMap.remove(uuid);
+
+            entity.setVelocity(entityLoc.subtract(p.getEyeLocation()).toVector().normalize().multiply(2.5));
+        }
+
         if (e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK) {
             if (runnableMap.containsKey(uuid)) {
                 Bukkit.getScheduler().cancelTask(runnableMap.get(uuid));
                 runnableMap.remove(uuid);
                 distanceMap.remove(uuid);
+                targetMap.remove(uuid);
 
                 return;
             }
@@ -60,10 +79,17 @@ public final class Main extends JavaPlugin implements Listener {
             Entity target = null;
 
             for (Entity entity : p.getWorld().getEntities()) {
-                Vector toEntity = entity.getLocation().add(0, 1, 0).toVector().subtract(eyeVector);
-                double dot = toEntity.normalize().dot(eyeDirection);
+                if (entity == p) continue;
 
-                if (dot > 0.99D) {
+                Vector toEntity;
+
+                if (entity instanceof LivingEntity) {
+                    toEntity = entity.getLocation().add(0, ((LivingEntity) entity).getEyeHeight(), 0).toVector().subtract(eyeVector);
+                } else {
+                    toEntity = entity.getLocation().toVector().subtract(eyeVector);
+                }
+
+                if (toEntity.normalize().dot(eyeDirection) > 0.99D) {
                     target = entity;
 
                     break;
@@ -78,13 +104,18 @@ public final class Main extends JavaPlugin implements Listener {
                 distanceMap.put(uuid, p.getEyeLocation().distance(target.getLocation()));
             }
 
-            Entity entity = target;
+            targetMap.put(uuid, target.getUniqueId());
+
             BukkitTask runnable = new BukkitRunnable() {
+
+                private final Entity entity = getEntity(targetMap.get(uuid));
+
                 @Override
                 public void run() {
-                    if (!entity.isValid()) {
+                    if (entity == null || !entity.isValid()) {
                         runnableMap.remove(uuid);
                         distanceMap.remove(uuid);
+                        targetMap.remove(uuid);
                         cancel();
 
                         return;
@@ -138,6 +169,18 @@ public final class Main extends JavaPlugin implements Listener {
         if (distanceMap.get(uuid) < 0) {
             distanceMap.put(uuid, 0D);
         }
+    }
+
+    private Entity getEntity(UUID uuid) {
+        for (World world : Bukkit.getServer().getWorlds()) {
+            for (Entity entity : world.getEntities()) {
+                if (entity.getUniqueId().equals(uuid)) {
+                    return entity;
+                }
+            }
+        }
+
+        return null;
     }
 }
 
