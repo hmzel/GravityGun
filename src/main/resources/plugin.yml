@@ -3,3 +3,7 @@ version: '${project.version}'
 main: me.zelha.gravitygun.Main
 authors: [ zelha ]
 description: fun lil plugin that lets you grab and throw things like a gravity gun
+commands:
+  gravitygun:
+    usage: /<command>
+    description: Turns the item you're holding into a gravity gun.
