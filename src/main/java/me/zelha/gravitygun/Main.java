@@ -10,6 +10,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -41,6 +42,8 @@ public final class Main extends JavaPlugin implements Listener {
         if (item == null || item.getType() == Material.AIR) return;
         if (!item.getItemMeta().getDisplayName().equals("§dGravity Gun")) return;
         if (!Arrays.toString(item.getItemMeta().getLore().toArray()).contains("§dMode: ")) return;
+
+        e.setCancelled(true);
 
         if (e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK) {
             if (runnableMap.containsKey(uuid)) {
@@ -100,6 +103,38 @@ public final class Main extends JavaPlugin implements Listener {
             }.runTaskTimer(this, 0, 1);
 
             runnableMap.put(uuid, runnable.getTaskId());
+        }
+    }
+
+    @EventHandler
+    public void onScroll(PlayerItemHeldEvent e) {
+        Player p = e.getPlayer();
+        UUID uuid = p.getUniqueId();
+        ItemStack item = p.getItemInHand();
+
+        if (!distanceMap.containsKey(uuid)) return;
+        if (e.getNewSlot() == e.getPreviousSlot()) return;
+        if (item == null || item.getType() == Material.AIR) return;
+        if (!item.getItemMeta().getDisplayName().equals("§dGravity Gun")) return;
+        if (!Arrays.toString(item.getItemMeta().getLore().toArray()).contains("§dMode: ")) return;
+
+        e.setCancelled(true);
+
+        int current = e.getPreviousSlot();
+        int scroll = e.getNewSlot();
+
+        if (current - scroll < 0 && scroll > current + 4) {
+            distanceMap.put(uuid, distanceMap.get(uuid) + current + 8 - scroll + 1);
+        } else if (scroll >= current - 4 && scroll < current) {
+            distanceMap.put(uuid, distanceMap.get(uuid) + current - scroll);
+        } else if (scroll - current < 0 && scroll < current - 4) {
+            distanceMap.put(uuid, distanceMap.get(uuid) - ((8 - current) + scroll + 1));
+        } else if (scroll > current) {
+            distanceMap.put(uuid, distanceMap.get(uuid) - (scroll - current));
+        }
+
+        if (distanceMap.get(uuid) < 0) {
+            distanceMap.put(uuid, 0D);
         }
     }
 }
