@@ -36,7 +36,7 @@ public class GravityGunCommand implements CommandExecutor {
                 "§dMode: §6Velocity",
                 "",
                 "§dLeft Click: Throw target",
-                "§dRight Click: Pick up target",
+                "§dRight Click: Pick up or drop target",
                 "§dScroll Wheel: Move target further or closer",
                 "§dDrop: Change mode"
         ));
