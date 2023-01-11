@@ -116,6 +116,7 @@ public final class Main extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onDrop(PlayerDropItemEvent e) {
+        UUID uuid = e.getPlayer().getUniqueId();
         ItemStack item = e.getItemDrop().getItemStack();
         ItemMeta meta = item.getItemMeta();
         List<String> lore = meta.getLore();
@@ -125,6 +126,10 @@ public final class Main extends JavaPlugin implements Listener {
         if (!loreString.contains("§dMode: ")) return;
 
         e.setCancelled(true);
+        Bukkit.getScheduler().cancelTask(runnableMap.get(uuid));
+        runnableMap.remove(uuid);
+        distanceMap.remove(uuid);
+        targetMap.remove(uuid);
 
         if (loreString.contains("§6Velocity")) {
             lore.set(1, "§dMode: §5Teleport");
