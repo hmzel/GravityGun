@@ -137,28 +137,7 @@ public final class Main extends JavaPlugin implements Listener {
     }
 
     private void velocityMode(Player p, UUID uuid) {
-        Location eye = p.getEyeLocation();
-        Vector eyeVector = eye.toVector();
-        Vector eyeDirection = eye.getDirection();
-        Entity target = null;
-
-        for (Entity entity : p.getWorld().getEntities()) {
-            if (entity == p) continue;
-
-            Vector toEntity;
-
-            if (entity instanceof LivingEntity) {
-                toEntity = entity.getLocation().add(0, ((LivingEntity) entity).getEyeHeight(), 0).toVector().subtract(eyeVector);
-            } else {
-                toEntity = entity.getLocation().toVector().subtract(eyeVector);
-            }
-
-            if (toEntity.normalize().dot(eyeDirection) > 0.99D) {
-                target = entity;
-
-                break;
-            }
-        }
+        Entity target = getTarget(p);
 
         if (target == null) return;
 
@@ -203,7 +182,72 @@ public final class Main extends JavaPlugin implements Listener {
     }
 
     private void teleportMode(Player p, UUID uuid) {
-        Bukkit.broadcastMessage("woo");
+        Entity target = getTarget(p);
+
+        if (target == null) return;
+
+        if (target instanceof LivingEntity) {
+            distanceMap.put(uuid, p.getEyeLocation().distance(target.getLocation().add(0, ((LivingEntity) target).getEyeHeight(), 0)));
+        } else {
+            distanceMap.put(uuid, p.getEyeLocation().distance(target.getLocation()));
+        }
+
+        targetMap.put(uuid, target.getUniqueId());
+
+        BukkitTask runnable = new BukkitRunnable() {
+
+            private final Entity entity = getEntity(targetMap.get(uuid));
+
+            @Override
+            public void run() {
+                if (entity == null || !entity.isValid()) {
+                    runnableMap.remove(uuid);
+                    distanceMap.remove(uuid);
+                    targetMap.remove(uuid);
+                    cancel();
+
+                    return;
+                }
+
+                Location wanted = p.getEyeLocation().add(p.getLocation().getDirection().multiply(distanceMap.get(uuid)));
+
+                if (entity instanceof LivingEntity) {
+                    wanted.subtract(0, ((LivingEntity) entity).getEyeHeight(), 0);
+                }
+
+                entity.teleport(wanted);
+                entity.setVelocity(new Vector());
+            }
+        }.runTaskTimer(this, 0, 1);
+
+        runnableMap.put(uuid, runnable.getTaskId());
+    }
+
+    private Entity getTarget(Player player) {
+        Location eye = player.getEyeLocation();
+        Vector eyeVector = eye.toVector();
+        Vector eyeDirection = eye.getDirection();
+        Entity target = null;
+
+        for (Entity entity : player.getWorld().getEntities()) {
+            if (entity == player) continue;
+
+            Vector toEntity;
+
+            if (entity instanceof LivingEntity) {
+                toEntity = entity.getLocation().add(0, ((LivingEntity) entity).getEyeHeight(), 0).toVector().subtract(eyeVector);
+            } else {
+                toEntity = entity.getLocation().toVector().subtract(eyeVector);
+            }
+
+            if (toEntity.normalize().dot(eyeDirection) > 0.99D) {
+                target = entity;
+
+                break;
+            }
+        }
+
+        return target;
     }
 
     private Entity getEntity(UUID uuid) {
