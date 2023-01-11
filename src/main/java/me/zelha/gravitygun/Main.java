@@ -10,18 +10,17 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public final class Main extends JavaPlugin implements Listener {
 
@@ -73,69 +72,13 @@ public final class Main extends JavaPlugin implements Listener {
                 return;
             }
 
-            Location eye = p.getEyeLocation();
-            Vector eyeVector = eye.toVector();
-            Vector eyeDirection = eye.getDirection();
-            Entity target = null;
+            String loreString = Arrays.toString(item.getItemMeta().getLore().toArray());
 
-            for (Entity entity : p.getWorld().getEntities()) {
-                if (entity == p) continue;
-
-                Vector toEntity;
-
-                if (entity instanceof LivingEntity) {
-                    toEntity = entity.getLocation().add(0, ((LivingEntity) entity).getEyeHeight(), 0).toVector().subtract(eyeVector);
-                } else {
-                    toEntity = entity.getLocation().toVector().subtract(eyeVector);
-                }
-
-                if (toEntity.normalize().dot(eyeDirection) > 0.99D) {
-                    target = entity;
-
-                    break;
-                }
+            if (loreString.contains("§6Velocity")) {
+                velocityMode(p, uuid);
+            } else if (loreString.contains("§5Teleport")) {
+                teleportMode(p, uuid);
             }
-
-            if (target == null) return;
-
-            if (target instanceof LivingEntity) {
-                distanceMap.put(uuid, p.getEyeLocation().distance(target.getLocation().add(0, ((LivingEntity) target).getEyeHeight(), 0)));
-            } else {
-                distanceMap.put(uuid, p.getEyeLocation().distance(target.getLocation()));
-            }
-
-            targetMap.put(uuid, target.getUniqueId());
-
-            BukkitTask runnable = new BukkitRunnable() {
-
-                private final Entity entity = getEntity(targetMap.get(uuid));
-
-                @Override
-                public void run() {
-                    if (entity == null || !entity.isValid()) {
-                        runnableMap.remove(uuid);
-                        distanceMap.remove(uuid);
-                        targetMap.remove(uuid);
-                        cancel();
-
-                        return;
-                    }
-
-                    Location wanted = p.getEyeLocation().add(p.getLocation().getDirection().multiply(distanceMap.get(uuid)));
-                    Location current;
-
-                    if (entity instanceof LivingEntity) {
-                        current = entity.getLocation().add(0, ((LivingEntity) entity).getEyeHeight(), 0);
-                    } else {
-                        current = entity.getLocation();
-                    }
-
-                    entity.setVelocity(wanted.subtract(current).toVector());
-                    entity.setFallDistance(0);
-                }
-            }.runTaskTimer(this, 0, 1);
-
-            runnableMap.put(uuid, runnable.getTaskId());
         }
     }
 
@@ -171,6 +114,98 @@ public final class Main extends JavaPlugin implements Listener {
         }
     }
 
+    @EventHandler
+    public void onDrop(PlayerDropItemEvent e) {
+        ItemStack item = e.getItemDrop().getItemStack();
+        ItemMeta meta = item.getItemMeta();
+        List<String> lore = meta.getLore();
+        String loreString = Arrays.toString(lore.toArray());
+
+        if (!meta.getDisplayName().equals("§dGravity Gun")) return;
+        if (!loreString.contains("§dMode: ")) return;
+
+        e.setCancelled(true);
+
+        if (loreString.contains("§6Velocity")) {
+            lore.set(1, "§dMode: §5Teleport");
+        } else if (loreString.contains("§5Teleport")) {
+            lore.set(1, "§dMode: §6Velocity");
+        }
+
+        meta.setLore(lore);
+        item.setItemMeta(meta);
+    }
+
+    private void velocityMode(Player p, UUID uuid) {
+        Location eye = p.getEyeLocation();
+        Vector eyeVector = eye.toVector();
+        Vector eyeDirection = eye.getDirection();
+        Entity target = null;
+
+        for (Entity entity : p.getWorld().getEntities()) {
+            if (entity == p) continue;
+
+            Vector toEntity;
+
+            if (entity instanceof LivingEntity) {
+                toEntity = entity.getLocation().add(0, ((LivingEntity) entity).getEyeHeight(), 0).toVector().subtract(eyeVector);
+            } else {
+                toEntity = entity.getLocation().toVector().subtract(eyeVector);
+            }
+
+            if (toEntity.normalize().dot(eyeDirection) > 0.99D) {
+                target = entity;
+
+                break;
+            }
+        }
+
+        if (target == null) return;
+
+        if (target instanceof LivingEntity) {
+            distanceMap.put(uuid, p.getEyeLocation().distance(target.getLocation().add(0, ((LivingEntity) target).getEyeHeight(), 0)));
+        } else {
+            distanceMap.put(uuid, p.getEyeLocation().distance(target.getLocation()));
+        }
+
+        targetMap.put(uuid, target.getUniqueId());
+
+        BukkitTask runnable = new BukkitRunnable() {
+
+            private final Entity entity = getEntity(targetMap.get(uuid));
+
+            @Override
+            public void run() {
+                if (entity == null || !entity.isValid()) {
+                    runnableMap.remove(uuid);
+                    distanceMap.remove(uuid);
+                    targetMap.remove(uuid);
+                    cancel();
+
+                    return;
+                }
+
+                Location wanted = p.getEyeLocation().add(p.getLocation().getDirection().multiply(distanceMap.get(uuid)));
+                Location current;
+
+                if (entity instanceof LivingEntity) {
+                    current = entity.getLocation().add(0, ((LivingEntity) entity).getEyeHeight(), 0);
+                } else {
+                    current = entity.getLocation();
+                }
+
+                entity.setVelocity(wanted.subtract(current).toVector());
+                entity.setFallDistance(0);
+            }
+        }.runTaskTimer(this, 0, 1);
+
+        runnableMap.put(uuid, runnable.getTaskId());
+    }
+
+    private void teleportMode(Player p, UUID uuid) {
+        Bukkit.broadcastMessage("woo");
+    }
+
     private Entity getEntity(UUID uuid) {
         for (World world : Bukkit.getServer().getWorlds()) {
             for (Entity entity : world.getEntities()) {
@@ -183,10 +218,6 @@ public final class Main extends JavaPlugin implements Listener {
         return null;
     }
 }
-
-
-
-//Bukkit.broadcastMessage(Arrays.toString(item.getItemMeta().getLore().toArray()));
 
 
 
