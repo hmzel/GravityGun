@@ -78,12 +78,13 @@ public final class Main extends JavaPlugin implements Listener {
                 distanceMap.put(uuid, p.getEyeLocation().distance(target.getLocation()));
             }
 
-
             Entity entity = target;
             BukkitTask runnable = new BukkitRunnable() {
                 @Override
                 public void run() {
                     if (!entity.isValid()) {
+                        runnableMap.remove(uuid);
+                        distanceMap.remove(uuid);
                         cancel();
 
                         return;
@@ -99,6 +100,7 @@ public final class Main extends JavaPlugin implements Listener {
                     }
 
                     entity.setVelocity(wanted.subtract(current).toVector());
+                    entity.setFallDistance(0);
                 }
             }.runTaskTimer(this, 0, 1);
 
