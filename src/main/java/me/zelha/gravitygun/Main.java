@@ -126,10 +126,13 @@ public final class Main extends JavaPlugin implements Listener {
         if (!loreString.contains("§dMode: ")) return;
 
         e.setCancelled(true);
-        Bukkit.getScheduler().cancelTask(runnableMap.get(uuid));
-        runnableMap.remove(uuid);
-        distanceMap.remove(uuid);
-        targetMap.remove(uuid);
+
+        if (runnableMap.containsKey(uuid)) {
+            Bukkit.getScheduler().cancelTask(runnableMap.get(uuid));
+            runnableMap.remove(uuid);
+            distanceMap.remove(uuid);
+            targetMap.remove(uuid);
+        }
 
         if (loreString.contains("§6Velocity")) {
             lore.set(1, "§dMode: §5Teleport");
