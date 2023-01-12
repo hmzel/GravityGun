@@ -174,6 +174,15 @@ public class PlayerData {
 
                 entity.setVelocity(velocity);
             }
+        } else if (mode == Mode.BLOCKS) {
+            for (UUID id : new ArrayList<>(targetList)) {
+                FallingBlock block = (FallingBlock) getEntity(id);
+
+                if (block == null || !block.isValid()) return;
+
+                block.getLocation().getBlock().setType(block.getMaterial());
+                block.remove();
+            }
         }
     }
 

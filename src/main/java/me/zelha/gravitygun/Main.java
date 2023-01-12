@@ -8,6 +8,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -141,6 +142,11 @@ public final class Main extends JavaPlugin implements Listener {
 
         meta.setLore(lore);
         item.setItemMeta(meta);
+    }
+
+    @EventHandler
+    public void onDisconnect(PlayerQuitEvent e) {
+        dataMap.remove(e.getPlayer().getUniqueId());
     }
 
     public void removeData(UUID uuid) {
