@@ -28,9 +28,11 @@ public class PlayerData {
         this.player = player.getUniqueId();
 
         if (mode != Mode.BLOCKS) {
-            Vector eyeVector = player.getEyeLocation().toVector();
-            Vector eyeDirection = player.getEyeLocation().getDirection();
+            Location eye = player.getEyeLocation();
+            Vector eyeVector = eye.toVector();
+            Vector eyeDirection = eye.getDirection();
             Entity target = null;
+            double distance = Double.MAX_VALUE;
 
             for (Entity entity : player.getWorld().getEntities()) {
                 if (entity == player) continue;
@@ -43,10 +45,9 @@ public class PlayerData {
                     toEntity = entity.getLocation().toVector().subtract(eyeVector);
                 }
 
-                if (toEntity.normalize().dot(eyeDirection) > 0.98D) {
+                if (toEntity.normalize().dot(eyeDirection) > 0.98D && eye.distance(entity.getLocation()) < distance) {
                     target = entity;
-
-                    break;
+                    distance = eye.distance(target.getLocation());
                 }
             }
 
@@ -60,9 +61,9 @@ public class PlayerData {
             }
 
             if (target instanceof LivingEntity) {
-                distance = player.getEyeLocation().distance(target.getLocation().add(0, ((LivingEntity) target).getEyeHeight(), 0));
+                this.distance = eye.distance(target.getLocation().add(0, ((LivingEntity) target).getEyeHeight(), 0));
             } else {
-                distance = player.getEyeLocation().distance(target.getLocation());
+                this.distance = eye.distance(target.getLocation());
             }
 
             targetList.add(target.getUniqueId());
