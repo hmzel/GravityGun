@@ -2,7 +2,7 @@
 
 Made in 1.8.8 and tested in 1.19.3, should work in all versions between the two and onward.
 <br><br>
-Just a funny lil plugin i decided to make to get back into coding after my 2 week break to study for the GED.
+Just a funny lil plugin i decided to make to get back into coding after my 2 week break.
 <br>
 All you have to do is run /gravitygun while holding any item and itll turn that item into a gravity gun!
 <br><br>
@@ -18,4 +18,5 @@ Theres also other features like left clicking to throw your target(s), and using
 <br><br><br>
 And of course, a funny screenshot which showcases the Blocks mode:
 <br><br>
-![funny image](https://cdn.discordapp.com/attachments/882425052434407506/1063262178678947860/2023-01-12_19.02.20.png)
+![2023-01-12_19 02 20](https://github.com/user-attachments/assets/d2d471af-ce45-4974-a63b-bbffb3c5b878)
+
